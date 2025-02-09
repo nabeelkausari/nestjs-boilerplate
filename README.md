@@ -144,7 +144,7 @@ Each service exposes a health check endpoint:
 
 ## License
 
-This project is licensed under the UNLICENSED License - see the LICENSE file for details.
+This project is licensed under the MIT License - [LICENSE](https://opensource.org/licenses/mit-license.php)
 
 ## Author
 
