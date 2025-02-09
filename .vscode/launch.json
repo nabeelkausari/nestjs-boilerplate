@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "attach",
-      "name": "Auth Service",
+      "name": "Gateway Service",
       "skipFiles": ["<node_internals>/**"],
       "address": "localhost",
       "port": 9229,
@@ -19,10 +19,22 @@
     {
       "type": "node",
       "request": "attach",
-      "name": "Notifications Service",
+      "name": "Auth Service",
       "skipFiles": ["<node_internals>/**"],
       "address": "localhost",
       "port": 9230,
+      "sourceMaps": true,
+      "restart": true,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/usr/src/app"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Notifications Service",
+      "skipFiles": ["<node_internals>/**"],
+      "address": "localhost",
+      "port": 9231,
       "sourceMaps": true,
       "restart": true,
       "localRoot": "${workspaceFolder}",

@@ -118,6 +118,35 @@ pnpm run test:e2e
 pnpm run test:cov
 ```
 
+## Docker Development
+
+Docker support is built-in for development with debugging capabilities:
+
+1. **Start all services with Docker Compose**
+
+   ```bash
+   docker compose up -d
+   ```
+
+   This command starts all services in detached mode with debugging enabled.
+
+2. **Debugging with VS Code**
+
+   The project includes VS Code launch configurations for debugging all services. Each service has a dedicated debug port:
+
+   - Gateway Service: Port 9229
+   - Auth Service: Port 9230
+   - Notifications Service: Port 9231
+
+   To start debugging:
+
+   1. Start the services using Docker Compose
+   2. Open VS Code Debug panel (Ctrl/Cmd + Shift + D)
+   3. Select the service you want to debug from the dropdown
+   4. Click the "Start Debugging" button or press F5
+
+   The debugger will automatically attach to the running service container.
+
 ## API Documentation
 
 Once the services are running, you can access the Swagger documentation:
