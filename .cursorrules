@@ -1,0 +1,69 @@
+## Package Manager:
+
+Use pnpm as the package manager.
+
+## Testing Guidelines:
+
+For each feature migrated from Spring Boot to NestJS, implement the following three levels of tests:
+
+1. Unit Tests (\*.spec.ts):
+
+   - Test individual components in isolation (services, repositories, etc.)
+   - Mock all dependencies
+   - Focus on business logic and edge cases
+   - Naming convention: [component-name].spec.ts
+   - Example locations:
+     - src/auth/auth.service.spec.ts
+     - src/auth/auth.controller.spec.ts
+
+2. Integration Tests (\*integration.spec.ts):
+
+   - Test how components work together
+   - Test HTTP layer with validation, transformation, and error handling
+   - Use in-memory MongoDB for database operations
+   - Mock external services only
+   - Focus on specific feature behaviors
+   - Test error scenarios and validations
+   - Naming convention: [feature].integration.spec.ts
+   - Location: test/[feature].integration.spec.ts
+
+3. End-to-End Tests (\*e2e.spec.ts):
+   - Test complete user flows and real-world scenarios
+   - Test actual database persistence
+   - Test concurrent operations
+   - Test multiple user types and interactions
+   - Include performance and load scenarios where relevant
+   - Naming convention: [feature].e2e.spec.ts
+   - Location: test/[feature].e2e.spec.ts
+
+## Test Setup Requirements:
+
+1. Use mongodb-memory-server for database tests
+2. Configure separate test environment (.env.test)
+3. Clean up test data between test runs
+4. Use Jest as the testing framework
+5. Include proper error handling tests
+6. Test both success and failure scenarios
+7. Verify response formats match API specifications
+8. Disable logging during test execution using @app/common
+   - Use setupTestLogging() in beforeAll
+   - Use restoreTestLogging() in afterAll
+   - Wrap the test module in disableLogging() before compilation
+
+## Coverage Requirements:
+
+1. Minimum 80% code coverage for unit tests
+2. All API endpoints must have integration tests
+3. Critical user flows must have e2e tests
+4. Test validation rules and error messages
+5. Test security and authorization where applicable
+
+## Best Practices:
+
+1. Keep test files close to the code they test
+2. Use descriptive test names that explain the scenario
+3. Follow AAA pattern (Arrange, Act, Assert)
+4. Use test data factories for consistent test data
+5. Don't test implementation details in integration/e2e tests
+6. Include performance testing for critical endpoints
+7. Document complex test setups and scenarios

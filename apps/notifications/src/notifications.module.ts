@@ -11,17 +11,28 @@ import { MongooseModule } from '@nestjs/mongoose';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validationSchema: Joi.object({
-        MONGODB_URI: Joi.string().required(),
-        RABBITMQ_URI: Joi.string().required(),
-      }),
+      validationSchema:
+        process.env.NODE_ENV === 'test'
+          ? Joi.object({
+              MONGODB_URI: Joi.string().optional(),
+              RABBITMQ_URI: Joi.string().optional(),
+              PORT: Joi.number().optional(),
+            })
+          : Joi.object({
+              MONGODB_URI: Joi.string().required(),
+              RABBITMQ_URI: Joi.string().required(),
+            }),
     }),
-    MongooseModule.forRootAsync({
-      useFactory: (configService) => ({
-        uri: configService.get('MONGODB_URI'),
-      }),
-      inject: [ConfigService],
-    }),
+    ...(process.env.NODE_ENV !== 'test'
+      ? [
+          MongooseModule.forRootAsync({
+            useFactory: (configService) => ({
+              uri: configService.get('MONGODB_URI'),
+            }),
+            inject: [ConfigService],
+          }),
+        ]
+      : []),
     LoggerModule,
     TerminusModule,
     HealthModule,
