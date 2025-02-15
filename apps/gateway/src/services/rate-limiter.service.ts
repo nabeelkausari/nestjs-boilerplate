@@ -22,8 +22,8 @@ export class RateLimiterService {
     });
 
     this.defaultConfig = {
-      points: this.configService.get('RATE_LIMIT_POINTS', 100),
-      duration: this.configService.get('RATE_LIMIT_DURATION', 60),
+      points: this.configService.get('RATE_LIMIT_LIMIT', 100),
+      duration: this.configService.get('RATE_LIMIT_TTL', 60),
     };
   }
 

@@ -38,21 +38,28 @@ export class RouteController {
     return this.routeService.getRoutes();
   }
 
-  @Put(':serviceId')
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a route by ID' })
+  @ApiResponse({ status: 200, description: 'Route retrieved successfully.' })
+  async getRoute(@Param('id') id: string): Promise<Route> {
+    return this.routeService.getRouteById(id);
+  }
+
+  @Put(':id')
   @ApiOperation({ summary: 'Update a route' })
   @ApiResponse({ status: 200, description: 'Route updated successfully.' })
   async updateRoute(
-    @Param('serviceId') serviceId: string,
+    @Param('id') id: string,
     @Body() updateRouteDto: UpdateRouteDto,
   ): Promise<Route> {
-    return this.routeService.updateRoute(serviceId, updateRouteDto);
+    return this.routeService.updateRouteById(id, updateRouteDto);
   }
 
-  @Delete(':serviceId')
+  @Delete(':id')
   @ApiOperation({ summary: 'Delete a route' })
   @ApiResponse({ status: 200, description: 'Route deleted successfully.' })
-  async deleteRoute(@Param('serviceId') serviceId: string): Promise<void> {
-    return this.routeService.deleteRoute(serviceId);
+  async deleteRoute(@Param('id') id: string): Promise<void> {
+    return this.routeService.deleteRouteById(id);
   }
 
   @Post('refresh')

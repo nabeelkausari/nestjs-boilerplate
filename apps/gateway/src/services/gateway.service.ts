@@ -51,7 +51,12 @@ export class GatewayService {
     }
 
     // Check circuit breaker
-    await this.circuitBreaker.checkService(route.serviceId);
+    try {
+      await this.circuitBreaker.checkService(route.serviceId);
+    } catch (error) {
+      this.logger.error(`Circuit breaker error: ${error.message}`);
+      throw new ServiceUnavailableException('Service Unavailable');
+    }
 
     // Get service instance
     let serviceUrl: string;

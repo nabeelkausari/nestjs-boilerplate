@@ -1,4 +1,5 @@
 import { Logger, LoggerService } from '@nestjs/common';
+import { TestingModule } from '@nestjs/testing';
 
 /**
  * A silent logger service that does nothing
@@ -14,14 +15,14 @@ export const silentLogger: LoggerService = {
 
 /**
  * Configures a testing module to disable all logging
- * @param testingModuleBuilder - The testing module builder to configure
- * @returns The configured testing module builder
+ * @param moduleRef - The testing module to configure
+ * @returns The configured testing module
  */
-export const disableLogging = (testingModuleBuilder: any): any => {
-  return testingModuleBuilder
-    .setLogger(silentLogger)
-    .overrideProvider(Logger)
-    .useValue(silentLogger);
+export const disableLogging = async (
+  moduleRef: TestingModule,
+): Promise<TestingModule> => {
+  moduleRef.useLogger(silentLogger);
+  return moduleRef;
 };
 
 /**

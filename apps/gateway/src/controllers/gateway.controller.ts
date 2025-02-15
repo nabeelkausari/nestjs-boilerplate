@@ -40,7 +40,10 @@ export class GatewayController {
     @Next() next: NextFunction,
   ) {
     // Skip processing if the path is for gateway routes or gateway health
-    if (request.path === '/routes' || request.path === '/health') {
+    if (
+      request.path.startsWith('/routes') ||
+      request.path.startsWith('/health')
+    ) {
       return next();
     }
 
@@ -83,8 +86,20 @@ export class GatewayController {
     return healthResult;
   }
 
+  @Get('health/services')
+  @ApiOperation({ summary: 'Check detailed services health' })
+  @ApiResponse({
+    status: 200,
+    description: 'Services health check successful.',
+  })
+  @ApiResponse({ status: 503, description: 'Service unavailable.' })
+  async checkServicesHealth() {
+    const healthResult = await this.gatewayService.checkServicesHealth();
+    return healthResult;
+  }
+
   @Get('routes')
-  // @ApiBearerAuth()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all registered routes' })
   @ApiResponse({ status: 200, description: 'Routes retrieved successfully.' })
   async getRoutes(): Promise<Route[]> {
