@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import axios from 'axios';
@@ -46,23 +53,25 @@ export class GatewayService {
     // Check circuit breaker
     await this.circuitBreaker.checkService(route.serviceId);
 
+    // Get service instance
+    let serviceUrl: string;
     try {
-      // Get service instance
-      const serviceUrl = await this.loadBalancer.getServiceInstance(
-        route.serviceId,
-      );
+      serviceUrl = await this.loadBalancer.getServiceInstance(route.serviceId);
+    } catch (error) {
+      this.logger.error(`Failed to get service instance: ${error.message}`);
+      throw new ServiceUnavailableException('Service Unavailable');
+    }
 
-      // Forward request
+    // Forward request
+    try {
       const response = await this.forwardRequest(request, serviceUrl);
-
       // Record success
       await this.circuitBreaker.recordSuccess(route.serviceId);
-
       return response;
     } catch (error) {
       // Record failure
       await this.circuitBreaker.recordError(route.serviceId);
-      throw error;
+      throw new ServiceUnavailableException('Service Unavailable');
     }
   }
 
@@ -95,30 +104,38 @@ export class GatewayService {
         validateStatus: null,
       });
 
+      // Always throw ServiceUnavailableException for health check endpoints if the service is down
+      if (path.endsWith('/health') && response.status !== 200) {
+        throw new ServiceUnavailableException('Service Unavailable');
+      }
+
+      if (response.status === 404 || response.status >= 500) {
+        throw new ServiceUnavailableException('Service Unavailable');
+      }
+
       return {
         status: response.status,
         headers: response.headers,
         data: response.data,
       };
     } catch (error) {
-      this.logger.error(`Forward request error: ${error.message}`, {
+      this.logger.error('Forward request error: ' + error.message, {
         serviceId,
         timeout,
         url: url.toString(),
       });
+
       if (axios.isAxiosError(error)) {
-        if (error.response) {
-          return {
-            status: error.response.status,
-            headers: error.response.headers,
-            data: error.response.data,
-          };
+        // Handle connection errors (ECONNREFUSED, ETIMEDOUT, etc.)
+        if (error.code || !error.response) {
+          throw new ServiceUnavailableException('Service Unavailable');
         }
-        throw new Error(
-          `Request failed: ${error.message} (Timeout: ${timeout}ms)`,
-        );
+        // Handle HTTP errors
+        if (error.response?.status === 404 || error.response?.status >= 500) {
+          throw new ServiceUnavailableException('Service Unavailable');
+        }
       }
-      throw error;
+      throw new ServiceUnavailableException('Service Unavailable');
     }
   }
 
@@ -138,6 +155,48 @@ export class GatewayService {
 
   async checkHealth(): Promise<any> {
     const routes = await this.routeService.getRoutes();
+    const info = {};
+    const details = {};
+    let hasDownServices = false;
+
+    // Always include gateway status
+    info['gateway'] = { status: 'up' };
+    details['gateway'] = { status: 'up' };
+
+    for (const route of routes) {
+      try {
+        const serviceUrl = await this.loadBalancer.getServiceInstance(
+          route.serviceId,
+        );
+
+        try {
+          await this.forwardRequest(
+            { method: 'GET', path: `/${route.serviceId}/health` } as Request,
+            serviceUrl,
+          );
+          info[route.serviceId] = { status: 'up' };
+          details[route.serviceId] = { status: 'up' };
+        } catch (error) {
+          hasDownServices = true;
+          info[route.serviceId] = { status: 'down' };
+          details[route.serviceId] = { status: 'down' };
+        }
+      } catch (error) {
+        hasDownServices = true;
+        info[route.serviceId] = { status: 'down' };
+        details[route.serviceId] = { status: 'down' };
+      }
+    }
+
+    return {
+      status: hasDownServices ? 'degraded' : 'ok',
+      info,
+      details,
+    };
+  }
+
+  async checkServicesHealth(): Promise<Record<string, any>> {
+    const routes = await this.routeService.getRoutes();
     const healthStatus = {};
 
     for (const route of routes) {
@@ -150,21 +209,17 @@ export class GatewayService {
           serviceUrl,
         );
         healthStatus[route.serviceId] = {
-          status: 'healthy',
+          status: 'up',
           details: response.data,
         };
       } catch (error) {
         healthStatus[route.serviceId] = {
-          status: 'unhealthy',
+          status: 'down',
           error: error.message,
         };
       }
     }
 
-    return {
-      gateway: 'healthy',
-      services: healthStatus,
-      timestamp: new Date(),
-    };
+    return healthStatus;
   }
 }

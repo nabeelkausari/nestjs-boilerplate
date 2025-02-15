@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { RouteService } from './route.service';
 
 @Injectable()
@@ -14,10 +18,16 @@ export class LoadBalancerService {
   async getServiceInstance(serviceId: string): Promise<string> {
     let endpoints = this.serviceEndpoints.get(serviceId);
 
-    if (!endpoints) {
-      const urls = await this.routeService.getActiveEndpoints(serviceId);
-      endpoints = { index: 0, urls };
-      this.serviceEndpoints.set(serviceId, endpoints);
+    // Always refresh endpoints to ensure we have the latest status
+    const urls = await this.routeService.getActiveEndpoints(serviceId);
+    if (!urls || urls.length === 0) {
+      throw new ServiceUnavailableException('Service Unavailable');
+    }
+    endpoints = { index: 0, urls };
+    this.serviceEndpoints.set(serviceId, endpoints);
+
+    if (!endpoints.urls || endpoints.urls.length === 0) {
+      throw new ServiceUnavailableException('Service Unavailable');
     }
 
     // Round-robin selection

@@ -35,21 +35,15 @@ export class RateLimiterService {
     multi.incr(key);
     multi.ttl(key);
 
-    const results = await multi.exec();
-    if (!results) throw new Error('Redis multi exec failed');
+    const [count, ttl] = await multi.exec();
+    const currentCount = count[1] as number;
 
-    const [[incrErr, count], [ttlErr, ttl]] = results;
-    if (incrErr || ttlErr) throw new Error('Redis operation failed');
-
-    const currentCount = count as number;
     if (currentCount === 1) {
       await this.redis.expire(key, duration);
     }
 
     const remainingPoints = points - currentCount;
-    const remainingTime = ttl as number;
-
-    if (!request.res) throw new Error('Response object not available');
+    const remainingTime = ttl[1] as number;
 
     // Set rate limit headers
     request.res.setHeader('X-RateLimit-Limit', points);
@@ -89,12 +83,7 @@ export class RateLimiterService {
     multi.get(key);
     multi.ttl(key);
 
-    const results = await multi.exec();
-    if (!results) throw new Error('Redis multi exec failed');
-
-    const [[getErr, count], [ttlErr, ttl]] = results;
-    if (getErr || ttlErr) throw new Error('Redis operation failed');
-
+    const [[, count], [, ttl]] = await multi.exec();
     const currentCount = parseInt(count as string) || 0;
     const remaining = Math.max(0, this.defaultConfig.points - currentCount);
 
@@ -102,5 +91,12 @@ export class RateLimiterService {
       remaining,
       reset: Date.now() + (ttl as number) * 1000,
     };
+  }
+
+  async resetLimits(): Promise<void> {
+    const keys = await this.redis.keys('ratelimit:*');
+    if (keys.length > 0) {
+      await this.redis.del(...keys);
+    }
   }
 }

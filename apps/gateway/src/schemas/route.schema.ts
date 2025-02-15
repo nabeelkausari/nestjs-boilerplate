@@ -63,6 +63,5 @@ export class Route extends AbstractSchema {
 export const RouteSchema = SchemaFactory.createForClass(Route);
 
 // Add indexes
-RouteSchema.index({ serviceId: 1 }, { unique: true });
 RouteSchema.index({ pathPattern: 1 });
 RouteSchema.index({ status: 1 });

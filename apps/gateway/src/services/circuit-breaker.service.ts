@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 
 interface CircuitBreakerState {
   failures: number;
-  lastFailure: Date | null;
+  lastFailure: Date;
   status: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 }
 
@@ -37,9 +37,7 @@ export class CircuitBreakerService {
         if (this.shouldAttemptReset(state)) {
           state.status = 'HALF_OPEN';
         } else {
-          throw new ServiceUnavailableException(
-            'Service is temporarily unavailable',
-          );
+          throw new ServiceUnavailableException('Service Unavailable');
         }
         break;
       case 'HALF_OPEN':
@@ -77,7 +75,7 @@ export class CircuitBreakerService {
         status: 'CLOSED',
       });
     }
-    return this.states.get(serviceId)!;
+    return this.states.get(serviceId);
   }
 
   private shouldAttemptReset(state: CircuitBreakerState): boolean {
@@ -98,5 +96,15 @@ export class CircuitBreakerService {
   async getServiceStatus(serviceId: string): Promise<string> {
     const state = this.getServiceState(serviceId);
     return state.status;
+  }
+
+  async reset(serviceId: string): Promise<void> {
+    this.resetState(serviceId);
+  }
+
+  async resetAll(): Promise<void> {
+    for (const serviceId of this.states.keys()) {
+      this.resetState(serviceId);
+    }
   }
 }
