@@ -2,16 +2,21 @@ import {
   Injectable,
   UnauthorizedException,
   UnprocessableEntityException,
+  NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersRepository } from './users.repository';
 import { GetUserDto } from './dto/get-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './schemas/user.schema';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
-  async create(createUserDto: CreateUserDto) {
+
+  async create(createUserDto: CreateUserDto): Promise<User> {
     await this.validateCreateUserDto(createUserDto);
 
     return this.usersRepository.create({
@@ -21,15 +26,13 @@ export class UsersService {
   }
 
   private async validateCreateUserDto(createUserDto: CreateUserDto) {
-    try {
-      await this.usersRepository.findOne({
-        email: createUserDto.email,
-      });
-    } catch (error) {
-      return;
-    }
+    const existingUser = await this.usersRepository.findOne({
+      email: createUserDto.email,
+    });
 
-    throw new UnprocessableEntityException('User already exists');
+    if (existingUser) {
+      throw new UnprocessableEntityException('User already exists');
+    }
   }
 
   async verifyUser(email: string, password: string) {
@@ -46,5 +49,36 @@ export class UsersService {
 
   async getUser(query: GetUserDto) {
     return this.usersRepository.findOne(query);
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.findAll();
+  }
+
+  async findOne(id: string | Types.ObjectId): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
+  async update(
+    id: string | Types.ObjectId,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return this.usersRepository.update(id, updateUserDto);
+  }
+
+  async remove(id: string | Types.ObjectId): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return this.usersRepository.delete(id);
   }
 }

@@ -38,7 +38,7 @@ export class RouteService {
     this.isTestMode = this.configService.get<boolean>('TEST_MODE', false);
   }
 
-  private async loadRoutes() {
+  async loadRoutes() {
     try {
       const routes = await this.routeModel.find({
         status: ServiceStatus.ACTIVE,

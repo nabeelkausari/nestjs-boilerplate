@@ -17,18 +17,17 @@ export class LoadBalancerService {
 
   async getServiceInstance(serviceId: string): Promise<string> {
     let endpoints = this.serviceEndpoints.get(serviceId);
+    const currentIndex = endpoints?.index || 0;
 
     // Always refresh endpoints to ensure we have the latest status
     const urls = await this.routeService.getActiveEndpoints(serviceId);
     if (!urls || urls.length === 0) {
       throw new ServiceUnavailableException('Service Unavailable');
     }
-    endpoints = { index: 0, urls };
-    this.serviceEndpoints.set(serviceId, endpoints);
 
-    if (!endpoints.urls || endpoints.urls.length === 0) {
-      throw new ServiceUnavailableException('Service Unavailable');
-    }
+    // Update endpoints with new URLs but keep the current index
+    endpoints = { index: currentIndex % urls.length, urls };
+    this.serviceEndpoints.set(serviceId, endpoints);
 
     // Round-robin selection
     const url = endpoints.urls[endpoints.index];

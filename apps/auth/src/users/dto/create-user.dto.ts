@@ -11,11 +11,11 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @IsStrongPassword()
+  @IsString()
   password: string;
 
-  @IsOptional()
   @IsArray()
+  @IsOptional()
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   roles?: string[];
