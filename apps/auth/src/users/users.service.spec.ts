@@ -3,16 +3,19 @@ import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserDocument } from './schemas/user.schema';
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { UserDocument } from './models/user.schema';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
 
 describe('UsersService', () => {
   let service: UsersService;
   let repository: jest.Mocked<UsersRepository>;
 
-  const mockUser = {
-    _id: new Types.ObjectId().toString(),
+  const mockUser: UserDocument = {
+    _id: new Types.ObjectId(),
     email: 'test@example.com',
     password: 'hashed_password',
     roles: ['user'],
@@ -57,11 +60,13 @@ describe('UsersService', () => {
       const result = await service.create(createUserDto);
 
       expect(result).toEqual(mockUser);
-      expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({
-        email: createUserDto.email,
-        password: expect.any(String),
-        roles: createUserDto.roles,
-      }));
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: createUserDto.email,
+          password: expect.any(String),
+          roles: createUserDto.roles,
+        }),
+      );
     });
 
     it('should throw UnprocessableEntityException if user exists', async () => {
@@ -104,9 +109,9 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne(new Types.ObjectId().toString())).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findOne(new Types.ObjectId().toString()),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -123,7 +128,10 @@ describe('UsersService', () => {
       const result = await service.update(mockUser._id, updateUserDto);
 
       expect(result).toEqual(updatedUser);
-      expect(repository.update).toHaveBeenCalledWith(mockUser._id, updateUserDto);
+      expect(repository.update).toHaveBeenCalledWith(
+        mockUser._id,
+        updateUserDto,
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -149,9 +157,9 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.remove(new Types.ObjectId().toString())).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.remove(new Types.ObjectId().toString()),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
